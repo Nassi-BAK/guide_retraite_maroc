@@ -50,44 +50,23 @@ const AvantRetraite = () => {
 
   const calculatePension = () => {
     const dureeService = parseInt(formData.duree);
-    const salaireMoyen = parseInt(formData.salaireMoyen) || 10000; // Salaire moyen par défaut
+    const salaireMoyen = parseInt(formData.salaireMoyen) || 10000;
     const ageActuel = parseInt(formData.age);
     const ageRetraite = parseInt(formData.ageRetraite) || 60;
     
-    let pensionAnnuelle = 0;
-    let tauxRemplacement = 0;
-
-    // Formules de calcul selon le régime
-    if (formData.regime === 'cnss') {
-      // CNSS: 50% du salaire moyen pour 15 ans + 1% par année supplémentaire
-      if (dureeService >= 15) {
-        tauxRemplacement = 50 + Math.min((dureeService - 15), 10); // Max 60%
-      } else {
-        tauxRemplacement = Math.max((dureeService / 15) * 50, 0); // Prorata
-      }
-      pensionAnnuelle = salaireMoyen * (tauxRemplacement / 100);
-    } else if (formData.regime === 'cmr') {
-      // CMR: Formule similaire à la CNSS
-      if (dureeService >= 10) {
-        tauxRemplacement = 50 + Math.min((dureeService - 10), 15); // Max 65%
-      } else {
-        tauxRemplacement = Math.max((dureeService / 10) * 50, 0);
-      }
-      pensionAnnuelle = salaireMoyen * (tauxRemplacement / 100);
-    } else if (formData.regime === 'rcar') {
-      // RCAR: À cotisations définies (environ 12% de cotisations)
-      const cotisationAnnuelle = salaireMoyen * 0.12;
-      const capitalAccumule = cotisationAnnuelle * dureeService * 1.02; // Intérêt 2%
-      pensionAnnuelle = capitalAccumule / 20; // Rente sur 20 ans
-      tauxRemplacement = (pensionAnnuelle / salaireMoyen) * 100;
-    }
+    // Formule simple et unifiée: Pension = Salaire × (2.5% × années)
+    const percentageRate = 2.5;
+    const totalPercentage = percentageRate * dureeService;
+    const pensionMensuelle = salaireMoyen * (totalPercentage / 100);
+    const pensionAnnuelle = pensionMensuelle * 12;
+    const tauxRemplacement = totalPercentage;
 
     const dureeProjetion = Math.max(85 - ageActuel, 20); // Projection jusqu'à 85 ans minimum
     
     setPensionResult({
       pensionAnnuelle: Math.round(pensionAnnuelle),
-      pensionMensuelle: Math.round(pensionAnnuelle / 12),
-      tauxRemplacement: Math.round(tauxRemplacement),
+      pensionMensuelle: Math.round(pensionMensuelle),
+      tauxRemplacement: Math.round(tauxRemplacement * 100) / 100,
       dureeProjetion: dureeProjetion
     });
   };

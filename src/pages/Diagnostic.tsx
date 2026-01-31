@@ -11,76 +11,100 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ClipboardCheck, CheckCircle, AlertTriangle, PartyPopper, ArrowRight, ArrowLeft, RotateCcw } from 'lucide-react';
+import { Calculator, CheckCircle, AlertTriangle, TrendingUp, ArrowRight, ArrowLeft, RotateCcw, DollarSign } from 'lucide-react';
 import diagnosticImage from '@/assets/diagnostic.jpg';
 
-type Status = 'before' | 'after';
-type Organization = 'cnss' | 'cmr' | 'rcar' | 'other';
+type Organization = 'cnss' | 'cmr' | 'rcar';
 
-interface DiagnosticResult {
-  status: Status;
-  age: number;
-  years: number;
+interface PensionResult {
+  monthlyPension: number;
+  annualPension: number;
+  calculationBreakdown: {
+    salary: number;
+    years: number;
+    rate: number;
+    percentage: number;
+  };
   organization: Organization;
+  warnings: string[];
 }
 
 const Diagnostic = () => {
   const { t, dir } = useLanguage();
   const ArrowIcon = dir === 'rtl' ? ArrowLeft : ArrowRight;
   
-  const [age, setAge] = useState('');
-  const [status, setStatus] = useState<Status | ''>('');
-  const [organization, setOrganization] = useState<Organization | ''>('');
+  const [currentAge, setCurrentAge] = useState('');
+  const [retirementAge, setRetirementAge] = useState('');
   const [years, setYears] = useState('');
-  const [result, setResult] = useState<DiagnosticResult | null>(null);
+  const [salary, setSalary] = useState('');
+  const [organization, setOrganization] = useState<Organization | ''>('');
+  const [result, setResult] = useState<PensionResult | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const calculatePension = (e: React.FormEvent) => {
     e.preventDefault();
-    if (age && status && organization && years) {
-      setResult({
-        status: status as Status,
-        age: parseInt(age),
-        years: parseInt(years),
-        organization: organization as Organization,
-      });
-    }
-  };
+    
+    const currentAgeNum = parseInt(currentAge);
+    const retirementAgeNum = parseInt(retirementAge);
+    const yearsNum = parseInt(years);
+    const salaryNum = parseFloat(salary);
 
-  const getResultMessages = (result: DiagnosticResult): string[] => {
-    const messages: string[] = [];
-    
-    if (result.status === 'before') {
-      if (result.age < 55) {
-        messages.push(t('diagnostic.result.before.young'));
-      } else {
-        messages.push(t('diagnostic.result.before.soon'));
-      }
-    } else {
-      messages.push(t('diagnostic.result.after'));
+    if (!currentAgeNum || !retirementAgeNum || !yearsNum || !salaryNum || !organization) return;
+
+    // Formule: pension = salaire × (2.5% × années cotisées)
+    const percentageRate = 2.5; // 2.5% par année
+    const totalPercentage = percentageRate * yearsNum;
+    const monthlyPension = salaryNum * (totalPercentage / 100);
+    const annualPension = monthlyPension * 12;
+
+    const warnings: string[] = [];
+
+    if (yearsNum < 10) {
+      warnings.push(yearsNum < 5 ? t('diagnostic.warning.veryLow') : t('diagnostic.warning.low'));
     }
     
-    if (result.years < 10) {
-      messages.push(t('diagnostic.result.low.years'));
-    } else if (result.years >= 20) {
-      messages.push(t('diagnostic.result.good.years'));
+    if (monthlyPension < 1000) {
+      warnings.push(t('diagnostic.warning.lowPension'));
     }
-    
-    return messages;
+
+    if (totalPercentage > 100) {
+      warnings.push(t('diagnostic.warning.maxPension'));
+    }
+
+    // Avertissement si l'âge de départ n'est pas valide
+    if (retirementAgeNum <= currentAgeNum) {
+      warnings.push(t('diagnostic.warning.invalidAge'));
+    }
+
+    setResult({
+      monthlyPension,
+      annualPension,
+      calculationBreakdown: {
+        salary: salaryNum,
+        years: yearsNum,
+        rate: percentageRate,
+        percentage: totalPercentage,
+      },
+      organization: organization as Organization,
+      warnings,
+    });
+  };
   };
 
   const resetForm = () => {
-    setAge('');
-    setStatus('');
-    setOrganization('');
+    setCurrentAge('');
+    setRetirementAge('');
     setYears('');
+    setSalary('');
+    setOrganization('');
     setResult(null);
   };
 
   const formFields = [
-    { id: 'age', filled: !!age },
-    { id: 'status', filled: !!status },
-    { id: 'organization', filled: !!organization },
+    { id: 'currentAge', filled: !!currentAge },
+    { id: 'retirementAge', filled: !!retirementAge },
     { id: 'years', filled: !!years },
+    { id: 'salary', filled: !!salary },
+    { id: 'organization', filled: !!organization },
   ];
 
   const progress = formFields.filter(f => f.filled).length / formFields.length * 100;
@@ -111,12 +135,12 @@ const Diagnostic = () => {
             transition={{ duration: 0.6 }}
           >
             <motion.div
-              className="w-20 h-20 rounded-2xl bg-coral/10 flex items-center justify-center text-coral mx-auto mb-6"
+              className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mx-auto mb-6"
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ type: 'spring', stiffness: 200, delay: 0.2 }}
             >
-              <ClipboardCheck className="h-10 w-10" />
+              <Calculator className="h-10 w-10" />
             </motion.div>
             <motion.h1 
               className="text-foreground mb-4"
@@ -155,7 +179,7 @@ const Diagnostic = () => {
                 /* Form */
                 <motion.form 
                   key="form"
-                  onSubmit={handleSubmit} 
+                  onSubmit={calculatePension} 
                   className="bg-card rounded-2xl p-8 card-shadow relative overflow-hidden"
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -173,52 +197,101 @@ const Diagnostic = () => {
                   </div>
 
                   <div className="grid gap-6 pt-4">
-                    {/* Age */}
+                    {/* Current Age */}
                     <motion.div 
                       className="space-y-2"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.1 }}
                     >
-                      <Label htmlFor="age" className="text-lg font-medium">
-                        {t('diagnostic.form.age')}
+                      <Label htmlFor="currentAge" className="text-lg font-medium">
+                        {t('diagnostic.form.currentAge')}
                       </Label>
                       <Input
-                        id="age"
+                        id="currentAge"
                         type="number"
                         min="18"
                         max="100"
-                        value={age}
-                        onChange={(e) => setAge(e.target.value)}
-                        placeholder={t('diagnostic.form.age.placeholder')}
+                        value={currentAge}
+                        onChange={(e) => setCurrentAge(e.target.value)}
+                        placeholder={t('diagnostic.form.currentAge.placeholder')}
                         className="h-14 text-lg transition-all focus:scale-[1.01]"
                         required
                       />
                     </motion.div>
 
-                    {/* Status */}
+                    {/* Retirement Age */}
+                    <motion.div 
+                      className="space-y-2"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.15 }}
+                    >
+                      <Label htmlFor="retirementAge" className="text-lg font-medium">
+                        {t('diagnostic.form.retirementAge')}
+                      </Label>
+                      <Input
+                        id="retirementAge"
+                        type="number"
+                        min="18"
+                        max="100"
+                        value={retirementAge}
+                        onChange={(e) => setRetirementAge(e.target.value)}
+                        placeholder={t('diagnostic.form.retirementAge.placeholder')}
+                        className="h-14 text-lg transition-all focus:scale-[1.01]"
+                        required
+                      />
+                    </motion.div>
+
+                    {/* Years of Contribution */}
                     <motion.div 
                       className="space-y-2"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
                     >
-                      <Label htmlFor="status" className="text-lg font-medium">
-                        {t('diagnostic.form.status')}
+                      <Label htmlFor="years" className="text-lg font-medium">
+                        {t('diagnostic.form.years')}
                       </Label>
-                      <Select value={status} onValueChange={(value) => setStatus(value as Status)}>
-                        <SelectTrigger className="h-14 text-lg">
-                          <SelectValue placeholder={t('diagnostic.form.status')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="before" className="text-lg py-3">
-                            {t('diagnostic.form.status.before')}
-                          </SelectItem>
-                          <SelectItem value="after" className="text-lg py-3">
-                            {t('diagnostic.form.status.after')}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <Input
+                        id="years"
+                        type="number"
+                        min="0"
+                        max="50"
+                        value={years}
+                        onChange={(e) => setYears(e.target.value)}
+                        placeholder={t('diagnostic.form.years.placeholder')}
+                        className="h-14 text-lg transition-all focus:scale-[1.01]"
+                        required
+                      />
+                      <p className="text-xs text-muted-foreground">{t('diagnostic.form.years.hint')}</p>
+                    </motion.div>
+
+                    {/* Salary */}
+                    <motion.div 
+                      className="space-y-2"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.25 }}
+                    >
+                      <Label htmlFor="salary" className="text-lg font-medium">
+                        {t('diagnostic.form.salary')}
+                      </Label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-4 top-4 h-5 w-5 text-muted-foreground" />
+                        <Input
+                          id="salary"
+                          type="number"
+                          min="0"
+                          step="100"
+                          value={salary}
+                          onChange={(e) => setSalary(e.target.value)}
+                          placeholder={t('diagnostic.form.salary.placeholder')}
+                          className="h-14 text-lg pl-10 transition-all focus:scale-[1.01]"
+                          required
+                        />
+                      </div>
+                      <p className="text-xs text-muted-foreground">{t('diagnostic.form.salary.hint')}</p>
                     </motion.div>
 
                     {/* Organization */}
@@ -245,41 +318,29 @@ const Diagnostic = () => {
                           <SelectItem value="rcar" className="text-lg py-3">
                             {t('diagnostic.form.org.rcar')}
                           </SelectItem>
-                          <SelectItem value="other" className="text-lg py-3">
-                            {t('diagnostic.form.org.other')}
-                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </motion.div>
 
-                    {/* Years */}
+                    {/* Formula Info */}
                     <motion.div 
-                      className="space-y-2"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 }}
+                      className="bg-primary/5 border border-primary/20 rounded-xl p-4 space-y-2"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.35 }}
                     >
-                      <Label htmlFor="years" className="text-lg font-medium">
-                        {t('diagnostic.form.years')}
-                      </Label>
-                      <Input
-                        id="years"
-                        type="number"
-                        min="0"
-                        max="50"
-                        value={years}
-                        onChange={(e) => setYears(e.target.value)}
-                        placeholder={t('diagnostic.form.years.placeholder')}
-                        className="h-14 text-lg transition-all focus:scale-[1.01]"
-                        required
-                      />
+                      <p className="text-sm font-semibold text-foreground">{t('diagnostic.form.formula')}</p>
+                      <p className="text-sm text-muted-foreground">{t('diagnostic.form.formulaDesc')}</p>
+                      <code className="block text-xs bg-background rounded p-2 mt-2 text-primary font-mono">
+                        Pension = Salaire × (2.5% × années)
+                      </code>
                     </motion.div>
 
                     {/* Submit */}
                     <motion.div
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5 }}
+                      transition={{ delay: 0.4 }}
                     >
                       <motion.div
                         whileHover={{ scale: 1.02 }}
@@ -288,11 +349,11 @@ const Diagnostic = () => {
                         <Button 
                           type="submit" 
                           size="lg" 
-                          className="w-full h-16 text-xl mt-4 bg-coral hover:bg-coral/90 text-coral-foreground"
-                          disabled={!age || !status || !organization || !years}
+                          className="w-full h-16 text-xl mt-4 bg-primary hover:bg-primary/90"
+                          disabled={!currentAge || !retirementAge || !years || !salary || !organization}
                         >
-                          {t('diagnostic.form.submit')}
-                          <ArrowIcon className="h-6 w-6 ms-2" />
+                          {t('diagnostic.form.calculate')}
+                          <Calculator className="h-6 w-6 ms-2" />
                         </Button>
                       </motion.div>
                     </motion.div>
@@ -320,53 +381,114 @@ const Diagnostic = () => {
                       animate={{ scale: 1, rotate: 0 }}
                       transition={{ type: 'spring', stiffness: 200, delay: 0.3 }}
                     >
-                      <PartyPopper className="h-10 w-10" />
+                      <TrendingUp className="h-10 w-10" />
                     </motion.div>
-                    <h2 className="text-2xl font-semibold text-foreground">
+                    <h2 className="text-3xl font-bold text-foreground mb-2">
                       {t('diagnostic.result.title')}
                     </h2>
+                    <p className="text-muted-foreground">{t('diagnostic.result.subtitle')}</p>
                   </motion.div>
 
-                  <div className="space-y-4 mb-8">
-                    {getResultMessages(result).map((message, index) => {
-                      const isWarning = message.includes('Attention') || message.includes('تنبيه');
-                      const isGood = message.includes('Bonne nouvelle') || message.includes('Félicitations') || message.includes('خبر سار') || message.includes('تهانينا');
-                      
-                      return (
+                  {/* Main Results */}
+                  <div className="grid md:grid-cols-2 gap-6 mb-8">
+                    <motion.div 
+                      className="bg-primary/10 rounded-xl p-6 border border-primary/20"
+                      initial={{ opacity: 0, x: -30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      <p className="text-sm text-muted-foreground mb-2">{t('diagnostic.result.monthly')}</p>
+                      <p className="text-4xl font-bold text-primary">
+                        {result.monthlyPension.toLocaleString('fr-FR', { 
+                          minimumFractionDigits: 0, 
+                          maximumFractionDigits: 0 
+                        })} DH
+                      </p>
+                    </motion.div>
+
+                    <motion.div 
+                      className="bg-secondary/50 rounded-xl p-6 border border-primary/10"
+                      initial={{ opacity: 0, x: 30 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      <p className="text-sm text-muted-foreground mb-2">{t('diagnostic.result.annual')}</p>
+                      <p className="text-4xl font-bold text-foreground">
+                        {result.annualPension.toLocaleString('fr-FR', { 
+                          minimumFractionDigits: 0, 
+                          maximumFractionDigits: 0 
+                        })} DH
+                      </p>
+                    </motion.div>
+                  </div>
+
+                  {/* Calculation Breakdown */}
+                  <motion.div 
+                    className="bg-secondary/30 rounded-xl p-6 mb-8 space-y-4"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <h3 className="font-semibold text-foreground">{t('diagnostic.result.breakdown')}</h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">{t('diagnostic.result.salary')}:</span>
+                        <span className="font-semibold">{result.calculationBreakdown.salary.toLocaleString('fr-FR')} DH</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">{t('diagnostic.result.years')}:</span>
+                        <span className="font-semibold">{result.calculationBreakdown.years} {t('diagnostic.result.yearsUnit')}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">{t('diagnostic.result.rate')}:</span>
+                        <span className="font-semibold">{result.calculationBreakdown.rate}% × {result.calculationBreakdown.years} = {result.calculationBreakdown.percentage}%</span>
+                      </div>
+                      <div className="border-t border-primary/10 pt-3 flex justify-between items-center font-bold">
+                        <span>{t('diagnostic.result.formula')}:</span>
+                        <span>{result.calculationBreakdown.salary} × {(result.calculationBreakdown.percentage / 100).toFixed(2)} = {result.monthlyPension.toFixed(0)} DH/mois</span>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  {/* Warnings */}
+                  {result.warnings.length > 0 && (
+                    <motion.div 
+                      className="space-y-3 mb-8"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6 }}
+                    >
+                      {result.warnings.map((warning, index) => (
                         <motion.div 
                           key={index}
-                          className={`flex items-start gap-4 p-4 rounded-xl ${
-                            isWarning 
-                              ? 'bg-coral/10 border border-coral/20' 
-                              : isGood 
-                                ? 'bg-primary/10 border border-primary/20'
-                                : 'bg-secondary'
-                          }`}
+                          className="flex items-start gap-3 p-4 bg-coral/10 border border-coral/20 rounded-lg"
                           initial={{ opacity: 0, x: -30 }}
                           animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.4 + index * 0.15 }}
+                          transition={{ delay: 0.7 + index * 0.1 }}
                         >
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: 'spring', stiffness: 300, delay: 0.5 + index * 0.15 }}
-                          >
-                            {isWarning ? (
-                              <AlertTriangle className="h-6 w-6 text-coral shrink-0" />
-                            ) : (
-                              <CheckCircle className="h-6 w-6 text-primary shrink-0" />
-                            )}
-                          </motion.div>
-                          <p className="text-foreground text-lg">{message}</p>
+                          <AlertTriangle className="h-5 w-5 text-coral shrink-0 mt-0.5" />
+                          <p className="text-foreground text-sm">{warning}</p>
                         </motion.div>
-                      );
-                    })}
-                  </div>
+                      ))}
+                    </motion.div>
+                  )}
+
+                  {/* Info Box */}
+                  <motion.div 
+                    className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-8"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.8 }}
+                  >
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {t('diagnostic.result.disclaimer')}
+                    </p>
+                  </motion.div>
 
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.8 }}
+                    transition={{ delay: 0.9 }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -377,7 +499,7 @@ const Diagnostic = () => {
                       className="w-full h-14 text-lg gap-2"
                     >
                       <RotateCcw className="h-5 w-5" />
-                      {dir === 'rtl' ? 'إعادة التشخيص' : 'Refaire le diagnostic'}
+                      {t('diagnostic.result.recalculate')}
                     </Button>
                   </motion.div>
                 </motion.div>

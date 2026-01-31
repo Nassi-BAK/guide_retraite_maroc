@@ -1,0 +1,176 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* Natural, calming palette inspired by the logo */
+    --background: 45 30% 97%;
+    --foreground: 220 30% 20%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 30% 20%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 30% 20%;
+
+    /* Olive green - trust, life, balance */
+    --primary: 100 25% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Soft green background */
+    --secondary: 100 20% 94%;
+    --secondary-foreground: 100 25% 30%;
+
+    /* Muted olive tones */
+    --muted: 45 20% 92%;
+    --muted-foreground: 220 15% 45%;
+
+    /* Warm accent for CTAs */
+    --accent: 100 20% 90%;
+    --accent-foreground: 100 25% 30%;
+
+    /* Warm coral/red - guidance, human support */
+    --coral: 5 55% 55%;
+    --coral-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 100 15% 85%;
+    --input: 100 15% 85%;
+    --ring: 100 25% 40%;
+
+    --radius: 0.75rem;
+
+    /* Sidebar colors */
+    --sidebar-background: 100 20% 96%;
+    --sidebar-foreground: 220 30% 20%;
+    --sidebar-primary: 100 25% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 100 20% 90%;
+    --sidebar-accent-foreground: 100 25% 30%;
+    --sidebar-border: 100 15% 85%;
+    --sidebar-ring: 100 25% 40%;
+
+    /* Custom tokens */
+    --hero-gradient: linear-gradient(135deg, hsl(100 20% 96%) 0%, hsl(45 30% 95%) 100%);
+    --card-shadow: 0 4px 20px -4px hsl(100 20% 30% / 0.08);
+    --card-hover-shadow: 0 8px 30px -4px hsl(100 20% 30% / 0.12);
+  }
+
+  .dark {
+    --background: 220 25% 10%;
+    --foreground: 45 20% 95%;
+
+    --card: 220 25% 13%;
+    --card-foreground: 45 20% 95%;
+
+    --popover: 220 25% 13%;
+    --popover-foreground: 45 20% 95%;
+
+    --primary: 100 30% 50%;
+    --primary-foreground: 220 25% 10%;
+
+    --secondary: 220 20% 18%;
+    --secondary-foreground: 100 20% 80%;
+
+    --muted: 220 20% 18%;
+    --muted-foreground: 45 15% 60%;
+
+    --accent: 220 20% 18%;
+    --accent-foreground: 100 20% 80%;
+
+    --coral: 5 55% 60%;
+    --coral-foreground: 0 0% 100%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 20% 20%;
+    --input: 220 20% 20%;
+    --ring: 100 30% 50%;
+
+    --sidebar-background: 220 25% 12%;
+    --sidebar-foreground: 45 20% 95%;
+    --sidebar-primary: 100 30% 50%;
+    --sidebar-primary-foreground: 220 25% 10%;
+    --sidebar-accent: 220 20% 18%;
+    --sidebar-accent-foreground: 100 20% 80%;
+    --sidebar-border: 220 20% 20%;
+    --sidebar-ring: 100 30% 50%;
+  }
+
+  /* RTL Support */
+  [dir="rtl"] {
+    font-family: 'IBM Plex Sans Arabic', 'Inter', sans-serif;
+  }
+
+  [dir="ltr"] {
+    font-family: 'Inter', 'IBM Plex Sans Arabic', sans-serif;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', 'IBM Plex Sans Arabic', sans-serif;
+  }
+
+  /* Accessibility: focus states */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Senior-friendly typography */
+  h1 {
+    @apply text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight;
+  }
+
+  h2 {
+    @apply text-2xl md:text-3xl font-semibold tracking-tight;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl font-semibold;
+  }
+
+  p {
+    @apply text-lg leading-relaxed;
+  }
+}
+
+@layer utilities {
+  .hero-gradient {
+    background: var(--hero-gradient);
+  }
+
+  .card-shadow {
+    box-shadow: var(--card-shadow);
+  }
+
+  .card-hover-shadow {
+    box-shadow: var(--card-hover-shadow);
+  }
+
+  /* Smooth transitions */
+  .transition-smooth {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  /* Container for content */
+  .content-container {
+    @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Section spacing */
+  .section-padding {
+    @apply py-12 md:py-16 lg:py-20;
+  }
+}
